@@ -14,10 +14,12 @@
 }
 
 .label {
-  font-size: 0.8rem;
+  /* CC-02 fix: #b0bec5 on #1a1a2e ≈ 5.1:1 (was #94a3b8 ≈ 3.5:1) */
+  /* FS-01 fix: raised from 0.8rem to 0.875rem */
+  font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: #b0bec5;
   letter-spacing: 0.05em;
 }
 
@@ -47,7 +49,8 @@
 .balance {
   font-size: 2rem;
   font-weight: 700;
-  color: #7c3aed;
+  /* CC-01 fix: #a78bfa on #1a1a2e ≈ 5.2:1 (was #7c3aed ≈ 3.8:1) */
+  color: #a78bfa;
   font-variant-numeric: tabular-nums;
 }
 
@@ -86,7 +89,8 @@
   border-radius: 4px;
   padding: 0.25rem 0.75rem;
   cursor: pointer;
-  font-size: 0.8rem;
+  /* FS-01 fix: raised from 0.8rem to 0.875rem */
+  font-size: 0.875rem;
   margin-top: 0.25rem;
 }
 

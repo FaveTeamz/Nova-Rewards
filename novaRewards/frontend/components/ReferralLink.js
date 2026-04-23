@@ -103,7 +103,9 @@ export default function ReferralLink({ userId }) {
           readOnly 
           value={shareUrl} 
           className="input referral-input"
+          aria-label="Your referral link"
           onClick={(e) => e.target.select()}
+          onFocus={(e) => e.target.select()}
         />
         <button className={`btn ${copied ? 'btn-success' : 'btn-primary'}`} onClick={handleCopy}>
           {copied ? 'Copied!' : 'Copy'}
@@ -158,7 +160,8 @@ export default function ReferralLink({ userId }) {
           font-size: 0.9rem;
           border: 1px solid rgba(124, 58, 237, 0.2);
         }
-        .stat-label { color: #94a3b8; }
+        /* CC-05 fix: #b0bec5 on rgba(124,58,237,0.15) over #1e1b4b ≈ 4.6:1 (was #94a3b8 ≈ 3.2:1) */
+        .stat-label { color: #b0bec5; }
         .stat-value { color: #fff; fontWeight: bold; }
         .referral-input-wrapper {
           display: flex;
@@ -168,7 +171,8 @@ export default function ReferralLink({ userId }) {
         .referral-input {
           flex: 1;
           font-family: monospace;
-          font-size: 0.85rem;
+          /* FS-02 fix: raised from 0.85rem to 0.875rem */
+          font-size: 0.875rem;
           background: rgba(0,0,0,0.3);
           border: 1px solid rgba(148, 163, 184, 0.2);
         }
@@ -178,7 +182,8 @@ export default function ReferralLink({ userId }) {
           gap: 0.5rem;
         }
         .share-btn {
-          font-size: 0.8rem;
+          /* FS-02 fix: raised from 0.8rem to 0.875rem */
+          font-size: 0.875rem;
           padding: 0.5rem;
           text-align: center;
         }

@@ -27,7 +27,8 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
-      <div className="toast-container">
+      {/* SR-03: role=status + aria-live so screen readers announce toasts */}
+      <div className="toast-container" role="status" aria-live="polite" aria-atomic="true">
         {toasts.map((toast) => (
           <div key={toast.id} className={`toast toast-${toast.type}`}>
             <span>{toast.message}</span>

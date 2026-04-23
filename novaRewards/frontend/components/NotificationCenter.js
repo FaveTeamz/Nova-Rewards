@@ -30,14 +30,14 @@ export default function NotificationCenter() {
     <div className="notification-center" ref={dropdownRef}>
       <button
         className="header-icon-btn"
-        aria-label="Notifications"
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount > 99 ? '99+' : unreadCount} unread` : 'Notifications'}
         aria-expanded={dropdownOpen}
         data-tour="notification-centre"
         onClick={() => (dropdownOpen ? closeDropdown() : openDropdown())}
       >
-        <span className="notification-icon">🔔</span>
+        <span className="notification-icon" aria-hidden="true">🔔</span>
         {unreadCount > 0 && (
-          <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+          <span className="notification-badge" aria-hidden="true">{unreadCount > 99 ? '99+' : unreadCount}</span>
         )}
       </button>
 

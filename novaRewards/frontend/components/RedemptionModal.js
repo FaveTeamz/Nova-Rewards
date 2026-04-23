@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 
 /**
@@ -21,6 +21,59 @@ export default function RedemptionModal({
   txError,
 }) {
   const [amount, setAmount] = useState(1);
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
+  // FM-01 / KN-01: focus trap + Escape key + restore focus on close
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Save the element that triggered the modal
+    previousFocusRef.current = document.activeElement;
+
+    // Move focus into the modal
+    const firstFocusable = modalRef.current?.querySelector(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    firstFocusable?.focus();
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && txStatus === 'idle') {
+        onCancel();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const focusable = Array.from(
+        modalRef.current?.querySelectorAll(
+          'button:not(:disabled), [href], input:not(:disabled), select, textarea, [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      // Restore focus to the triggering element
+      previousFocusRef.current?.focus();
+    };
+  }, [isOpen, txStatus, onCancel]);
 
   if (!isOpen || !reward) return null;
 
@@ -37,13 +90,21 @@ export default function RedemptionModal({
   };
 
   return (
+    /* SR-01: role=dialog, aria-modal, aria-labelledby */
     <div className="modal-overlay" onClick={txStatus === 'idle' ? onCancel : undefined}>
-      <div className="modal-content redemption-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={modalRef}
+        className="modal-content redemption-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="redemption-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
 
         {/* ── Step: Review & select amount ── */}
         {step === 'review' && (
           <>
-            <h2>Confirm Redemption</h2>
+            <h2 id="redemption-modal-title">Confirm Redemption</h2>
 
             <div className="redemption-details">
               {reward.image_url && (
@@ -133,7 +194,7 @@ export default function RedemptionModal({
         {step === 'pending' && (
           <div className="tx-status-panel">
             <div className="tx-spinner" aria-label="Processing" />
-            <h3>Waiting for Wallet Signature…</h3>
+            <h3 id="redemption-modal-title">Waiting for Wallet Signature…</h3>
             <p className="tx-status-msg">Please approve the transaction in your Freighter wallet.</p>
           </div>
         )}
@@ -142,7 +203,7 @@ export default function RedemptionModal({
         {step === 'success' && (
           <div className="tx-status-panel">
             <div className="tx-icon tx-icon-success" aria-hidden="true">✓</div>
-            <h3>Redemption Successful!</h3>
+            <h3 id="redemption-modal-title">Redemption Successful!</h3>
             <p className="tx-status-msg">
               You redeemed <strong>{reward.name}</strong>.
             </p>
@@ -166,7 +227,7 @@ export default function RedemptionModal({
         {step === 'error' && (
           <div className="tx-status-panel">
             <div className="tx-icon tx-icon-error" aria-hidden="true">✕</div>
-            <h3>Redemption Failed</h3>
+            <h3 id="redemption-modal-title">Redemption Failed</h3>
             <p className="tx-status-msg error">{txError || 'An unexpected error occurred.'}</p>
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={onCancel}>Close</button>

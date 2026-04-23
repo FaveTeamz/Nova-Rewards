@@ -76,10 +76,11 @@ export default function Leaderboard() {
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h2>Nova Leaderboard</h2>
-        <div className="toggle-group">
+        <div className="toggle-group" role="group" aria-label="Ranking period">
           <button
             className={`btn ${rankingType === 'all-time' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setRankingType('all-time')}
+            aria-pressed={rankingType === 'all-time'}
             style={{ marginRight: '0.5rem' }}
           >
             All-Time
@@ -87,6 +88,7 @@ export default function Leaderboard() {
           <button
             className={`btn ${rankingType === 'weekly' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setRankingType('weekly')}
+            aria-pressed={rankingType === 'weekly'}
           >
             Weekly
           </button>
@@ -134,7 +136,7 @@ export default function Leaderboard() {
                       {entry.avatar && (
                         <img
                           src={entry.avatar}
-                          alt="Avatar"
+                          alt={entry.displayName ? `${entry.displayName}'s avatar` : 'User avatar'}
                           style={{
                             width: '32px',
                             height: '32px',

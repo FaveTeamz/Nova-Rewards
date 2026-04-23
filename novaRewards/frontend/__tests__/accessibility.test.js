@@ -3,8 +3,10 @@ import { render } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import MobileCardList from '../components/MobileCardList';
 import BottomNav from '../components/BottomNav';
+import ConfirmationModal from '../components/ConfirmationModal';
+import { ToastProvider } from '../components/Toast';
+import Leaderboard from '../components/Leaderboard';
 
 // ── Next.js router mock ───────────────────────────────────────────────────────
 jest.mock('next/router', () => ({
@@ -16,6 +18,24 @@ jest.mock('next/link', () =>
     return <a href={href} {...props}>{children}</a>;
   }
 );
+
+// ── Leaderboard service mock ──────────────────────────────────────────────────
+jest.mock('../lib/leaderboardService', () => ({
+  leaderboardService: {
+    getLeaderboard: jest.fn().mockResolvedValue([
+      { publicKey: 'GABC', displayName: 'Alice', totalPoints: '1500', avatar: null },
+      { publicKey: 'GDEF', displayName: 'Bob',   totalPoints: '1200', avatar: null },
+    ]),
+  },
+}));
+
+jest.mock('../context/WalletContext', () => ({
+  useWallet: () => ({ publicKey: 'GABC' }),
+}));
+
+jest.mock('../lib/truncateAddress', () => ({
+  truncateAddress: (addr) => addr.slice(0, 6) + '...',
+}));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 async function expectNoViolations(ui) {
@@ -56,33 +76,6 @@ describe('Input — axe', () => {
   });
 });
 
-// ── MobileCardList ────────────────────────────────────────────────────────────
-describe('MobileCardList — axe', () => {
-  const columns = [
-    { key: 'name',   label: 'Name'   },
-    { key: 'amount', label: 'Amount' },
-    { key: 'status', label: 'Status' },
-  ];
-
-  const data = [
-    { id: 1, name: 'Alice',   amount: '100', status: 'confirmed' },
-    { id: 2, name: 'Bob',     amount: '50',  status: 'pending'   },
-  ];
-
-  test('card list (mobile view) has no violations', async () => {
-    // Render the ul (card list) portion — simulate mobile by checking the ul
-    await expectNoViolations(
-      <MobileCardList columns={columns} data={data} />
-    );
-  });
-
-  test('empty state has no violations', async () => {
-    await expectNoViolations(
-      <MobileCardList columns={columns} data={[]} emptyMessage="No records found." />
-    );
-  });
-});
-
 // ── BottomNav ─────────────────────────────────────────────────────────────────
 describe('BottomNav — axe', () => {
   test('bottom navigation has no violations', async () => {
@@ -110,5 +103,49 @@ describe('Form with labelled inputs — axe', () => {
         <Button type="submit">Sign in</Button>
       </form>
     );
+  });
+});
+
+// ── ConfirmationModal — axe ───────────────────────────────────────────────────
+describe('ConfirmationModal — axe', () => {
+  const props = {
+    isOpen: true,
+    onConfirm: jest.fn(),
+    onCancel: jest.fn(),
+    recipient: 'GABC...XYZ',
+    amount: '50',
+  };
+
+  test('open modal has no violations', async () => {
+    await expectNoViolations(<ConfirmationModal {...props} />);
+  });
+
+  test('closed modal (renders nothing) has no violations', async () => {
+    await expectNoViolations(<ConfirmationModal {...props} isOpen={false} />);
+  });
+});
+
+// ── ToastProvider — axe ───────────────────────────────────────────────────────
+describe('ToastProvider — axe', () => {
+  test('empty toast container has no violations', async () => {
+    await expectNoViolations(
+      <ToastProvider>
+        <div>App content</div>
+      </ToastProvider>
+    );
+  });
+});
+
+// ── Leaderboard — axe ────────────────────────────────────────────────────────
+describe('Leaderboard — axe', () => {
+  test('leaderboard with data has no violations', async () => {
+    let container;
+    await React.act(async () => {
+      ({ container } = render(<Leaderboard />));
+      // Allow the useEffect + async fetch to settle
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });

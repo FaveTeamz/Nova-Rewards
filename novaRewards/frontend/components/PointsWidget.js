@@ -88,11 +88,14 @@ export default function PointsWidget() {
             </div>
           )}
         </div>
-        {showDelta && delta !== 0 && (
-          <div className={`${styles.delta} ${delta > 0 ? styles.positive : styles.negative}`}>
-            {delta > 0 ? `+${delta}` : delta}
-          </div>
-        )}
+        {/* SR-06: aria-live so screen readers announce balance changes */}
+        <div aria-live="polite" aria-atomic="true">
+          {showDelta && delta !== 0 && (
+            <div className={`${styles.delta} ${delta > 0 ? styles.positive : styles.negative}`}>
+              {delta > 0 ? `+${delta}` : delta}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

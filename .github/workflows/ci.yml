@@ -68,3 +68,30 @@ jobs:
         working-directory: novaRewards
 
       - run: npm run build
+
+  frontend-a11y:
+    name: Frontend – Accessibility Tests (jest-axe)
+    runs-on: ubuntu-latest
+    needs: secret-scan
+    defaults:
+      run:
+        working-directory: novaRewards/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+        working-directory: novaRewards
+
+      - name: Run jest-axe accessibility tests
+        run: npx jest __tests__/accessibility.test.js --no-coverage --ci
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: a11y-test-results
+          path: novaRewards/frontend/test-results

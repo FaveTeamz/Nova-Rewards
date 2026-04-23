@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,8 @@ export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileBtnRef = useRef(null);
+  const profileDropdownRef = useRef(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -41,6 +43,38 @@ export default function DashboardLayout({ children }) {
 
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
+  }, [profileMenuOpen]);
+
+  // FM-02 / KN-02: keyboard nav for profile dropdown (ArrowDown/Up/Escape)
+  useEffect(() => {
+    if (!profileMenuOpen || !profileDropdownRef.current) return;
+
+    // Move focus to first item when dropdown opens
+    const firstItem = profileDropdownRef.current.querySelector(
+      'a, button:not(:disabled)'
+    );
+    firstItem?.focus();
+
+    const handleKeyDown = (e) => {
+      const items = Array.from(
+        profileDropdownRef.current?.querySelectorAll('a, button:not(:disabled)') ?? []
+      );
+      const idx = items.indexOf(document.activeElement);
+
+      if (e.key === 'Escape') {
+        setProfileMenuOpen(false);
+        profileBtnRef.current?.focus();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        items[(idx + 1) % items.length]?.focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        items[(idx - 1 + items.length) % items.length]?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [profileMenuOpen]);
 
   const handleLogout = () => {
@@ -97,27 +131,32 @@ export default function DashboardLayout({ children }) {
       <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : 'sidebar-collapsed'} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <Link href="/dashboard" className="sidebar-logo">
-            <span className="logo-icon">⭐</span>
+            {/* SR-04: aria-hidden on decorative icon */}
+            <span className="logo-icon" aria-hidden="true">⭐</span>
             {sidebarOpen && <span className="logo-text">NovaRewards</span>}
           </Link>
           <button
             className="sidebar-toggle desktop-only"
             onClick={toggleSidebar}
-            aria-label="Toggle sidebar"
+            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           >
             {sidebarOpen ? '◀' : '▶'}
           </button>
         </div>
 
-        <nav className="sidebar-nav">
+        <nav className="sidebar-nav" aria-label="Main navigation">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={`nav-link ${router.pathname === link.href ? 'nav-link-active' : ''}`}
               {...(link.tourId ? { 'data-tour': link.tourId } : {})}
+              /* SR-04: when collapsed, provide accessible label via aria-label */
+              aria-label={!sidebarOpen ? link.label : undefined}
+              aria-current={router.pathname === link.href ? 'page' : undefined}
             >
-              <span className="nav-icon">{link.icon}</span>
+              {/* SR-04: aria-hidden on emoji icons so screen readers use the link label */}
+              <span className="nav-icon" aria-hidden="true">{link.icon}</span>
               {sidebarOpen && <span className="nav-label">{link.label}</span>}
             </Link>
           ))}
@@ -128,22 +167,27 @@ export default function DashboardLayout({ children }) {
             className="btn btn-secondary btn-full"
             onClick={handleLogout}
           >
-            <span className="nav-icon">🚪</span>
+            <span className="nav-icon" aria-hidden="true">🚪</span>
             {sidebarOpen && <span>Sign Out</span>}
           </button>
         </div>
       </aside>
 
-      {/* Mobile overlay */}
+      {/* Mobile overlay — FM-05: aria-hidden main content when sidebar open */}
       {mobileMenuOpen && (
         <div
           className="mobile-overlay"
           onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
         />
       )}
 
-      {/* Main content area */}
-      <div className={`main-wrapper ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
+      {/* Main content area — FM-05: aria-hidden when mobile sidebar is open */}
+      <div
+        className={`main-wrapper ${sidebarOpen ? '' : 'sidebar-collapsed'}`}
+        aria-hidden={mobileMenuOpen ? 'true' : undefined}
+        inert={mobileMenuOpen ? '' : undefined}
+      >
         {/* Header */}
         <header className="header">
           <div className="header-left">
@@ -151,6 +195,7 @@ export default function DashboardLayout({ children }) {
               className="mobile-menu-btn mobile-only"
               onClick={toggleMobileMenu}
               aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
               ☰
             </button>
@@ -167,21 +212,29 @@ export default function DashboardLayout({ children }) {
             {/* User profile menu */}
             <div className="profile-menu-container">
               <button
+                ref={profileBtnRef}
                 className="profile-btn"
                 onClick={toggleProfileMenu}
                 aria-label="User menu"
+                aria-expanded={profileMenuOpen}
+                aria-haspopup="menu"
               >
-                <div className="user-avatar">
+                <div className="user-avatar" aria-hidden="true">
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <span className="user-name desktop-only">{user?.name || 'User'}</span>
-                <span className="dropdown-arrow">▼</span>
+                <span className="dropdown-arrow" aria-hidden="true">▼</span>
               </button>
 
               {profileMenuOpen && (
-                <div className="profile-dropdown">
-                  <div className="profile-dropdown-header">
-                    <div className="user-avatar-large">
+                <div
+                  ref={profileDropdownRef}
+                  className="profile-dropdown"
+                  role="menu"
+                  aria-label="User menu"
+                >
+                  <div className="profile-dropdown-header" role="presentation">
+                    <div className="user-avatar-large" aria-hidden="true">
                       {user?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div className="user-info">
@@ -189,15 +242,16 @@ export default function DashboardLayout({ children }) {
                       <p className="user-email">{user?.email || ''}</p>
                     </div>
                   </div>
-                  <div className="profile-dropdown-divider" />
-                  <Link href="/settings" className="profile-dropdown-item">
-                    <span>⚙️</span> Settings
+                  <div className="profile-dropdown-divider" role="separator" />
+                  <Link href="/settings" className="profile-dropdown-item" role="menuitem">
+                    <span aria-hidden="true">⚙️</span> Settings
                   </Link>
                   <button
                     className="profile-dropdown-item"
+                    role="menuitem"
                     onClick={handleLogout}
                   >
-                    <span>🚪</span> Sign Out
+                    <span aria-hidden="true">🚪</span> Sign Out
                   </button>
                 </div>
               )}
